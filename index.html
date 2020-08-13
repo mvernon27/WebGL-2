@@ -1,0 +1,185 @@
+<html>
+	<head>
+		<title>WebGl-2</title>
+		<style>
+			body { margin: 0; }
+			canvas { display: block; }
+		</style>
+	</head>
+	<body>
+		<script src="three.js"></script>
+		<script>
+
+            function RanNum(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            function random_rgb() {
+                var o = Math.round, r = Math.random, s = 255;
+                var b;
+                b =0
+                while(b<120){b = o(r()*s)}
+                return 'rgba(' + o(r()*s) + ',' + o(r()*s) + ',' + b + ')';
+            }
+
+            
+            let sphere, isSphere, renderer, scene, camera, mouse, raycaster, point, points, pointMaterial, pointCloud, pointClouds = [], pointCount;
+            let textGeometry, textVerts;
+            var loader = new THREE.FontLoader();
+
+            isSphere = false;
+            function init(){
+			    scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera();
+                camera.position.z = 2;
+
+                directionalLight = new THREE.DirectionalLight(0xffffff);
+                sphere = new THREE.SphereGeometry(.15,100,75);
+
+                pointCount = sphere.vertices.length;
+
+			    renderer = new THREE.WebGLRenderer();
+			    renderer.setSize( window.innerWidth, window.innerHeight );
+                document.body.appendChild( renderer.domElement );
+                
+                raycaster = new THREE.Raycaster();
+                mouse = new THREE.Vector2();
+                raycaster.params.PointCloud.threshold = .1;
+
+                
+                for(let i=0;i<pointCount;i++) {
+                    point = new THREE.Vector3(
+                        RanNum(1,-1),
+                        RanNum(1,-1),
+                        RanNum(0,0)
+                        );
+                        point.isIntersected = {};
+                        point.isIntersected = false;
+                        points = new THREE.Geometry();
+                        points.vertices.push(point);
+                        
+
+                pointMaterial = new THREE.PointsMaterial({
+                    color: random_rgb(),
+                    size: 0.01,
+                    transparent: true,
+                    opacity:.0
+                });
+
+                pointCloud = new THREE.Points(points, pointMaterial);
+                scene.add(pointCloud);
+                pointClouds.push(pointCloud);
+            }
+            }
+
+			function render() {
+                renderer.render( scene, camera );
+            }
+            
+            init();
+
+            function onMouseMove( event ) {
+                event.preventDefault();
+	            mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+                mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+                var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+                vector.unproject( camera );
+	            var dir = vector.sub( camera.position ).normalize();
+	            var distance = - camera.position.z / dir.z;
+                var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+                raycaster.setFromCamera( mouse, camera );
+
+                for (var i = 0; i<pointCount; i++)
+                {
+                    pointClouds[i].geometry.vertices[0].isIntersected = false;
+                }
+
+                var intersects = raycaster.intersectObjects( scene.children );
+
+                if(isSphere == false)
+                {
+                for (var i = 0; i<intersects.length; i++)
+                {
+                    intersects[i].object.geometry.vertices[0].z += .035;
+                    intersects[i].object.material.opacity +=.1;
+                    intersects[i].object.geometry.verticesNeedUpdate = true;
+                    intersects[i].object.geometry.vertices[0].isIntersected = true;
+                }
+                }
+            }
+            window.addEventListener( 'mousemove', onMouseMove, false );
+
+            function onMouseClick(){
+                    isSphere = true;
+                    console.log(isSphere)
+            }
+            window.addEventListener('click', onMouseClick, false);
+
+            function animate() { 
+                if(isSphere == false){
+                for(var i = 0; i<pointCount; i++)
+                {
+                    if(pointClouds[i].geometry.vertices[0].z > 0 && pointClouds[i].geometry.vertices[0].isIntersected == false)
+                    {
+                        pointClouds[i].geometry.vertices[0].z -= .003;
+                        pointClouds[i].geometry.verticesNeedUpdate = true;
+                    }
+                    if(pointClouds[i].material.opacity > 0.0 && pointClouds[i].geometry.vertices[0].isIntersected == false){
+                        pointClouds[i].material.opacity -=.0075;
+                    }
+                }
+                }
+                if(isSphere == true){
+                var accelaration = .004;
+                var newSize = .075;
+                for(var i = 0; i<pointCount; i++)
+                {
+                    if(pointClouds[i].material.size < newSize){
+                        pointClouds[i].material.size += .0001;
+                    }
+                    pointClouds[i].material.opacity = pointClouds[i].geometry.vertices[0].z+.1;
+                    pointClouds[i].material.color = new THREE.Color('rgb(75,0,255)');
+                    if(pointClouds[i].geometry.vertices[0].y < sphere.vertices[i].y)
+                    {
+                    pointClouds[i].geometry.vertices[0].y += accelaration;
+                    pointClouds[i].geometry.verticesNeedUpdate = true;
+                    }
+                    if(pointClouds[i].geometry.vertices[0].y > sphere.vertices[i].y)
+                    {
+                    pointClouds[i].geometry.vertices[0].y -= accelaration;
+                    pointClouds[i].geometry.verticesNeedUpdate = true;
+                    }
+                    if(pointClouds[i].geometry.vertices[0].x < sphere.vertices[i].x)
+                    {
+                    pointClouds[i].geometry.vertices[0].x += accelaration;
+                    pointClouds[i].geometry.verticesNeedUpdate = true;
+                    }
+                    if(pointClouds[i].geometry.vertices[0].x > sphere.vertices[i].x)
+                    {
+                    pointClouds[i].geometry.vertices[0].x -= accelaration;
+                    pointClouds[i].geometry.verticesNeedUpdate = true;
+                    }
+                    if(pointClouds[i].geometry.vertices[0].z < sphere.vertices[i].z)
+                    {
+                    pointClouds[i].geometry.vertices[0].z += accelaration;
+                    pointClouds[i].geometry.verticesNeedUpdate = true;
+                    }
+                    if(pointClouds[i].geometry.vertices[0].z > sphere.vertices[i].z)
+                    {
+                    pointClouds[i].geometry.vertices[0].z -= accelaration;
+                    pointClouds[i].geometry.verticesNeedUpdate = true;
+                    }
+                    pointClouds[i].rotation.y += .01;
+                    pointClouds[i].rotation.x += .01;
+                    pointClouds[i].rotation.z += .01;
+                }
+                }
+                requestAnimationFrame(animate)
+                requestAnimationFrame(render)
+            }
+            render();
+            animate();
+		</script>
+	</body>
+</html>
